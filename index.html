@@ -46,7 +46,9 @@
 
   function send() {
     var status = document.getElementById("status");
-    if (!tg || !tg.initData) {
+    // У Mini App, открытых кнопкой клавиатуры, initData пустой, поэтому проверяем платформу
+    var insideTelegram = tg && tg.platform && tg.platform !== "unknown";
+    if (!insideTelegram) {
       status.textContent = "Открой эту страницу кнопкой в боте.";
       return;
     }
