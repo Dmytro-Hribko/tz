@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Часовой пояс</title>
+<title>🕒</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   body {
@@ -29,37 +29,70 @@
 </style>
 </head>
 <body>
-  <h2>🕒 Определяем время…</h2>
+  <h2 id="title"></h2>
   <div id="tz"></div>
   <div id="time"></div>
-  <button id="retry" style="display:none">Отправить снова</button>
+  <button id="retry" style="display:none"></button>
   <div id="status"></div>
 
 <script>
+  // Тексти двома мовами. Мову передає бот в адресі (?lang=ua або ?lang=ru), інакше береться мова телефона.
+  var TEXTS = {
+    ua: {
+      title: "🕒 Визначаємо час…",
+      now: "Зараз у тебе: ",
+      unknown: "не вдалося визначити",
+      open_in_bot: "Відкрий цю сторінку кнопкою в боті.",
+      no_tz: "Не вдалося визначити пояс. Повернись у бот і введи час вручну.",
+      send_fail: "Не вдалося надіслати. Натисни кнопку ще раз.",
+      retry: "Надіслати знову"
+    },
+    ru: {
+      title: "🕒 Определяем время…",
+      now: "Сейчас у тебя: ",
+      unknown: "не удалось определить",
+      open_in_bot: "Открой эту страницу кнопкой в боте.",
+      no_tz: "Не получилось определить пояс. Вернись в бот и введи время вручную.",
+      send_fail: "Не удалось отправить. Нажми кнопку ещё раз.",
+      retry: "Отправить снова"
+    }
+  };
+
+  var params = new URLSearchParams(window.location.search);
+  var lang = (params.get("lang") || "").toLowerCase();
+  if (lang !== "ua" && lang !== "ru") {
+    var nav = (navigator.language || "").toLowerCase();
+    lang = nav.indexOf("uk") === 0 ? "ua" : "ru";
+  }
+  var L = TEXTS[lang];
+  document.documentElement.lang = lang === "ua" ? "uk" : "ru";
+
   var tg = window.Telegram && window.Telegram.WebApp;
   var tz = "";
   try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
 
-  document.getElementById("tz").textContent = tz || "не удалось определить";
+  document.getElementById("title").textContent = L.title;
+  document.getElementById("tz").textContent = tz || L.unknown;
   document.getElementById("time").textContent =
-    "Сейчас у тебя: " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    L.now + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  document.getElementById("retry").textContent = L.retry;
 
   function send() {
     var status = document.getElementById("status");
-    // У Mini App, открытых кнопкой клавиатуры, initData пустой, поэтому проверяем платформу
+    // У Mini App, відкритих кнопкою клавіатури, initData порожній, тому перевіряємо платформу
     var insideTelegram = tg && tg.platform && tg.platform !== "unknown";
     if (!insideTelegram) {
-      status.textContent = "Открой эту страницу кнопкой в боте.";
+      status.textContent = L.open_in_bot;
       return;
     }
     if (!tz) {
-      status.textContent = "Не получилось определить пояс. Вернись в бот и введи время вручную.";
+      status.textContent = L.no_tz;
       return;
     }
     try {
-      tg.sendData(JSON.stringify({ tz: tz }));  // отправляет данные боту и закрывает окно
+      tg.sendData(JSON.stringify({ tz: tz }));  // надсилає дані боту і закриває вікно
     } catch (e) {
-      status.textContent = "Не удалось отправить. Нажми кнопку ещё раз.";
+      status.textContent = L.send_fail;
       document.getElementById("retry").style.display = "inline-block";
     }
   }
